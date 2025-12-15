@@ -1,24 +1,20 @@
-# Use official Node.js LTS image
 FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy dependency files first (for layer caching)
-COPY package.json package-lock.json ./
+# Copy dependency files first (better caching)
+COPY strapi-app/package.json strapi-app/package-lock.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm install
 
-# Copy the rest of the application code
-COPY . .
+# Copy full Strapi app
+COPY strapi-app/ .
 
-# Build Strapi admin panel
+# Build admin panel
 RUN npm run build
 
-# Expose Strapi port
 EXPOSE 1337
 
-# Start Strapi
-CMD ["npm", "start"]
+CMD ["npm", "run", "start"]
 
