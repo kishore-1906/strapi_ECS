@@ -39,7 +39,7 @@ resource "aws_security_group" "ecs" {
 }
 
 ########################################
-# ECS Task Definition
+# ECS Task Definition (CORRECTED)
 ########################################
 
 resource "aws_ecs_task_definition" "this" {
@@ -48,12 +48,14 @@ resource "aws_ecs_task_definition" "this" {
   network_mode             = "awsvpc"
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_execution.arn
+
+  execution_role_arn = aws_iam_role.ecs_execution.arn
+  task_role_arn      = aws_iam_role.ecs_task.arn   # ✅ ADDED
 
   container_definitions = jsonencode([
     {
       name  = "strapi"
-      image = var.image_uri
+      image = var.image_uri   # ✅ uses your ECR account image
 
       portMappings = [
         {
