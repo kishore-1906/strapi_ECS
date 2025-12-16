@@ -1,15 +1,38 @@
+########################################
+# Get default VPC and its subnets
+########################################
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+########################################
+# Application Load Balancer
+########################################
+
 resource "aws_lb" "this" {
   name               = "${var.project_name}-alb"
   load_balancer_type = "application"
-  subnets            = var.public_subnets
+  subnets            = data.aws_subnets.default.ids
   security_groups    = [aws_security_group.ecs.id]
 }
+
+########################################
+# Target Group
+########################################
 
 resource "aws_lb_target_group" "this" {
   name        = "${var.project_name}-tg"
   port        = 1337
   protocol    = "HTTP"
-  vpc_id      = var.vpc_id
+  vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
 
   health_check {
@@ -21,6 +44,10 @@ resource "aws_lb_target_group" "this" {
     matcher             = "200-399"
   }
 }
+
+########################################
+# Listener
+########################################
 
 resource "aws_lb_listener" "this" {
   load_balancer_arn = aws_lb.this.arn

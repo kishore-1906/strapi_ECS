@@ -1,15 +1,27 @@
+########################################
+# ECS Cluster
+########################################
+
 resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
 }
+
+########################################
+# CloudWatch Logs
+########################################
 
 resource "aws_cloudwatch_log_group" "this" {
   name              = "/ecs/${var.project_name}"
   retention_in_days = 7
 }
 
+########################################
+# Security Group for ECS
+########################################
+
 resource "aws_security_group" "ecs" {
   name   = "${var.project_name}-ecs-sg"
-  vpc_id = var.vpc_id
+  vpc_id = data.aws_vpc.default.id
 
   ingress {
     from_port   = 1337
@@ -25,6 +37,10 @@ resource "aws_security_group" "ecs" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+########################################
+# ECS Task Definition
+########################################
 
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
@@ -57,6 +73,10 @@ resource "aws_ecs_task_definition" "this" {
   ])
 }
 
+########################################
+# ECS Service
+########################################
+
 resource "aws_ecs_service" "this" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.this.id
@@ -65,7 +85,7 @@ resource "aws_ecs_service" "this" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.public_subnets
+    subnets          = data.aws_subnets.default.ids
     security_groups  = [aws_security_group.ecs.id]
     assign_public_ip = true
   }
