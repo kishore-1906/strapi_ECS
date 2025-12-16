@@ -50,12 +50,12 @@ jobs:
 
       # 6️⃣ Terraform Init
       - name: Terraform Init
-        working-directory: task_7/terraform
+        working-directory: terraform
         run: terraform init
 
       # 7️⃣ Terraform Apply
       - name: Terraform Apply (Deploy to ECS)
-        working-directory: task_7/terraform
+        working-directory: terraform
         run: |
           terraform apply -auto-approve \
             -var="image_uri=$IMAGE_URI"
