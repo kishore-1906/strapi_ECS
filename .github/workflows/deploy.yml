@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPO: strapi-repo
+  ECR_REPO: strapi   # ✅ FIXED
 
 jobs:
   deploy:
@@ -32,12 +32,11 @@ jobs:
 
       # 4️⃣ Build, tag, and push Docker image
       - name: Build, tag, and push Docker image
-        id: build
         run: |
           IMAGE_TAG=$(git rev-parse --short HEAD)
-          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
-          echo "Building image: $IMAGE_URI"
+          echo "Building $IMAGE_URI"
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
 
@@ -54,10 +53,10 @@ jobs:
         working-directory: task_7/terraform
         run: terraform init
 
-      # 7️⃣ Terraform Apply (Deploy to ECS)
+      # 7️⃣ Terraform Apply
       - name: Terraform Apply (Deploy to ECS)
         working-directory: task_7/terraform
         run: |
           terraform apply -auto-approve \
-            -var="image_uri=${IMAGE_URI}"
+            -var="image_uri=$IMAGE_URI"
 
