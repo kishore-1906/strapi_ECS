@@ -7,12 +7,11 @@ resource "aws_ecs_cluster" "this" {
 }
 
 ########################################
-# CloudWatch Logs
+# CloudWatch Logs (READ EXISTING)
 ########################################
 
-resource "aws_cloudwatch_log_group" "this" {
-  name              = "/ecs/${var.project_name}"
-  retention_in_days = 7
+data "aws_cloudwatch_log_group" "this" {
+  name = "/ecs/${var.project_name}"
 }
 
 ########################################
@@ -39,7 +38,7 @@ resource "aws_security_group" "ecs" {
 }
 
 ########################################
-# ECS Task Definition (CORRECTED)
+# ECS Task Definition
 ########################################
 
 resource "aws_ecs_task_definition" "this" {
@@ -50,12 +49,12 @@ resource "aws_ecs_task_definition" "this" {
   memory                   = "1024"
 
   execution_role_arn = aws_iam_role.ecs_execution.arn
-  task_role_arn      = aws_iam_role.ecs_task.arn   # ✅ ADDED
+  task_role_arn      = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
       name  = "strapi"
-      image = var.image_uri   # ✅ uses your ECR account image
+      image = var.image_uri
 
       portMappings = [
         {
@@ -66,7 +65,7 @@ resource "aws_ecs_task_definition" "this" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.this.name
+          awslogs-group         = data.aws_cloudwatch_log_group.this.name
           awslogs-region        = var.aws_region
           awslogs-stream-prefix = "ecs"
         }
