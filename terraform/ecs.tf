@@ -1,54 +1,24 @@
-########################################
-# ECS Cluster
-########################################
-
 resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
 }
-
-########################################
-# CloudWatch Logs (READ EXISTING)
-########################################
 
 data "aws_cloudwatch_log_group" "this" {
   name = "/ecs/${var.project_name}"
 }
 
-########################################
-# Security Group for ECS
-########################################
-
-resource "aws_security_group" "ecs" {
+data "aws_security_group" "ecs" {
   name   = "${var.project_name}-ecs-sg"
   vpc_id = data.aws_vpc.default.id
-
-  ingress {
-    from_port   = 1337
-    to_port     = 1337
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
-
-########################################
-# ECS Task Definition
-########################################
 
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = "512"
-  memory                   = "1024"
+  cpu    = "512"
+  memory = "1024"
 
-  execution_role_arn = aws_iam_role.ecs_execution.arn
+  execution_role_arn = data.aws_iam_role.ecs_execution.arn
   task_role_arn      = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
@@ -56,11 +26,7 @@ resource "aws_ecs_task_definition" "this" {
       name  = "strapi"
       image = var.image_uri
 
-      portMappings = [
-        {
-          containerPort = 1337
-        }
-      ]
+      portMappings = [{ containerPort = 1337 }]
 
       logConfiguration = {
         logDriver = "awslogs"
@@ -74,10 +40,6 @@ resource "aws_ecs_task_definition" "this" {
   ])
 }
 
-########################################
-# ECS Service
-########################################
-
 resource "aws_ecs_service" "this" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.this.id
@@ -86,8 +48,8 @@ resource "aws_ecs_service" "this" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.default.ids
-    security_groups  = [aws_security_group.ecs.id]
+    subnets         = data.aws_subnets.default.ids
+    security_groups = [data.aws_security_group.ecs.id]
     assign_public_ip = true
   }
 
