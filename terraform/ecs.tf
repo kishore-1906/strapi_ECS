@@ -2,8 +2,10 @@ resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
 }
 
-data "aws_cloudwatch_log_group" "this" {
-  name = "/ecs/${var.project_name}"
+# 🔴 CHANGED: data → resource (Task #8 requires creating log group via Terraform)
+resource "aws_cloudwatch_log_group" "this" {
+  name              = "/ecs/${var.project_name}"
+  retention_in_days = 7
 }
 
 data "aws_security_group" "ecs" {
@@ -15,8 +17,8 @@ resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu    = "512"
-  memory = "1024"
+  cpu                      = "512"
+  memory                   = "1024"
 
   execution_role_arn = data.aws_iam_role.ecs_execution.arn
   task_role_arn      = aws_iam_role.ecs_task.arn
@@ -26,14 +28,21 @@ resource "aws_ecs_task_definition" "this" {
       name  = "strapi"
       image = var.image_uri
 
-      portMappings = [{ containerPort = 1337 }]
+      portMappings = [
+        {
+          containerPort = 1337
+        }
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = data.aws_cloudwatch_log_group.this.name
+          # 🔴 CHANGED: reference resource instead of data
+          awslogs-group         = aws_cloudwatch_log_group.this.name
           awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs"
+
+          # 🔴 CHANGED: clearer stream prefix as per task example
+          awslogs-stream-prefix = "ecs/strapi"
         }
       }
     }
@@ -48,8 +57,8 @@ resource "aws_ecs_service" "this" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = data.aws_subnets.default.ids
-    security_groups = [data.aws_security_group.ecs.id]
+    subnets          = data.aws_subnets.default.ids
+    security_groups  = [data.aws_security_group.ecs.id]
     assign_public_ip = true
   }
 
