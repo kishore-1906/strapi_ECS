@@ -46,6 +46,10 @@ resource "aws_ecs_task_definition" "this" {
         {
           name  = "JWT_SECRET"
           value = "jwtsecret123"
+        },
+        {
+          name  = "APP_KEYS"
+          value = "appkey1,appkey2,appkey3"
         }
       ]
 
