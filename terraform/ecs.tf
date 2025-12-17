@@ -33,15 +33,15 @@ resource "aws_ecs_task_definition" "this" {
         }
       ]
 
-      # 🔴 THIS IS THE IMPORTANT PART
+      # ✅ REQUIRED ENV VARIABLES FOR STRAPI (FIXED)
       environment = [
         {
           name  = "NODE_ENV"
           value = "production"
         },
         {
-          name  = "ADMIN_JWT_SECRET"
-          value = "adminjwtsecret123"
+          name  = "ADMIN_AUTH_SECRET"
+          value = "adminauthsecret123"
         },
         {
           name  = "JWT_SECRET"
