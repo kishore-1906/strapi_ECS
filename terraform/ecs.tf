@@ -33,15 +33,15 @@ resource "aws_ecs_task_definition" "this" {
         }
       ]
 
-      # ✅ REQUIRED ENV VARIABLES FOR STRAPI (FIXED)
+      # ✅ REQUIRED ENV VARIABLES FOR STRAPI v4
       environment = [
         {
           name  = "NODE_ENV"
           value = "production"
         },
         {
-          name  = "ADMIN_AUTH_SECRET"
-          value = "adminauthsecret123"
+          name  = "ADMIN_JWT_SECRET"
+          value = "adminjwtsecret123"
         },
         {
           name  = "JWT_SECRET"
@@ -67,6 +67,9 @@ resource "aws_ecs_service" "this" {
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+
+  # 🔴 IMPORTANT: force ECS to use the new task revision
+  force_new_deployment = true
 
   network_configuration {
     subnets          = data.aws_subnets.default.ids
