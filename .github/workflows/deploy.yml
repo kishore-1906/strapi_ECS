@@ -7,18 +7,19 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPO: strapi-repo   # ✅ FIXED (must match ECR + Terraform)
+  ECR_REPO: strapi-repo
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Configure AWS credentials
+      # 2️⃣ AWS Credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -26,15 +27,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3️⃣ Login to Amazon ECR
+      # 3️⃣ Login to ECR
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 4️⃣ Build, tag, and push Docker image
+      # 4️⃣ Build & Push Image
       - name: Build, tag, and push Docker image
         run: |
           IMAGE_TAG=$(git rev-parse --short HEAD)
-          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
+
+          echo "Building image: $IMAGE_URI"
 
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
