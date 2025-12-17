@@ -33,7 +33,7 @@ resource "aws_ecs_task_definition" "this" {
         }
       ]
 
-      # ✅ REQUIRED ENV VARIABLES FOR STRAPI v4
+      # ✅ REQUIRED ENV VARIABLES FOR STRAPI v4 (COMPLETE)
       environment = [
         {
           name  = "NODE_ENV"
@@ -50,6 +50,18 @@ resource "aws_ecs_task_definition" "this" {
         {
           name  = "APP_KEYS"
           value = "appkey1,appkey2,appkey3"
+        },
+        {
+          name  = "API_TOKEN_SALT"
+          value = "apitokensalt123456"
+        },
+        {
+          name  = "TRANSFER_TOKEN_SALT"
+          value = "transfertokensalt123456"
+        },
+        {
+          name  = "ENCRYPTION_KEY"
+          value = "encryptionkey1234567890"
         }
       ]
 
