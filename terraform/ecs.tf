@@ -2,7 +2,7 @@ resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
 }
 
-# ✅ OPTION 3: Use existing CloudWatch Log Group (no creation conflict)
+# ✅ OPTION 3: Use existing CloudWatch Log Group
 data "aws_cloudwatch_log_group" "this" {
   name = "/ecs/${var.project_name}"
 }
@@ -33,10 +33,25 @@ resource "aws_ecs_task_definition" "this" {
         }
       ]
 
+      # 🔴 THIS IS THE IMPORTANT PART
+      environment = [
+        {
+          name  = "NODE_ENV"
+          value = "production"
+        },
+        {
+          name  = "ADMIN_JWT_SECRET"
+          value = "adminjwtsecret123"
+        },
+        {
+          name  = "JWT_SECRET"
+          value = "jwtsecret123"
+        }
+      ]
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          # ✅ UPDATED: reference data source
           awslogs-group         = data.aws_cloudwatch_log_group.this.name
           awslogs-region        = var.aws_region
           awslogs-stream-prefix = "ecs/strapi"
