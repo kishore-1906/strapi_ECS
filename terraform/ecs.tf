@@ -2,10 +2,9 @@ resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
 }
 
-# 🔴 CHANGED: data → resource (Task #8 requires creating log group via Terraform)
-resource "aws_cloudwatch_log_group" "this" {
-  name              = "/ecs/${var.project_name}"
-  retention_in_days = 7
+# ✅ OPTION 3: Use existing CloudWatch Log Group (no creation conflict)
+data "aws_cloudwatch_log_group" "this" {
+  name = "/ecs/${var.project_name}"
 }
 
 data "aws_security_group" "ecs" {
@@ -37,11 +36,9 @@ resource "aws_ecs_task_definition" "this" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          # 🔴 CHANGED: reference resource instead of data
-          awslogs-group         = aws_cloudwatch_log_group.this.name
+          # ✅ UPDATED: reference data source
+          awslogs-group         = data.aws_cloudwatch_log_group.this.name
           awslogs-region        = var.aws_region
-
-          # 🔴 CHANGED: clearer stream prefix as per task example
           awslogs-stream-prefix = "ecs/strapi"
         }
       }
