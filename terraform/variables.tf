@@ -13,3 +13,8 @@ variable "image_uri" {
   type        = string
 }
 
+variable "alert_email" {
+  description = "Email address to receive CloudWatch alerts"
+  type        = string
+}
+
