@@ -1,13 +1,25 @@
 # ----------------------------
-# ECS CLUSTER (Spot Enabled)
+# ECS CLUSTER
 # ----------------------------
 resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
+}
+
+# ----------------------------
+# ECS CLUSTER CAPACITY PROVIDERS
+# ----------------------------
+resource "aws_ecs_cluster_capacity_providers" "this" {
+  cluster_name = aws_ecs_cluster.this.name
 
   capacity_providers = [
     "FARGATE",
     "FARGATE_SPOT"
   ]
+
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 1
+  }
 }
 
 # ----------------------------
@@ -72,7 +84,7 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 # ----------------------------
-# ECS SERVICE (Fargate Spot)
+# ECS SERVICE (FARGATE SPOT)
 # ----------------------------
 resource "aws_ecs_service" "this" {
   name            = "${var.project_name}-service"
@@ -80,13 +92,13 @@ resource "aws_ecs_service" "this" {
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 1
 
-  # ✅ Fargate Spot (primary)
+  # Primary: Fargate Spot
   capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
     weight            = 2
   }
 
-  # ✅ Normal Fargate (fallback)
+  # Fallback: Normal Fargate
   capacity_provider_strategy {
     capacity_provider = "FARGATE"
     weight            = 1
@@ -106,6 +118,9 @@ resource "aws_ecs_service" "this" {
     container_port   = 1337
   }
 
-  depends_on = [aws_lb_listener.this]
+  depends_on = [
+    aws_lb_listener.this,
+    aws_ecs_cluster_capacity_providers.this
+  ]
 }
 
