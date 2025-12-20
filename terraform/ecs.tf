@@ -1,17 +1,33 @@
+# ----------------------------
+# ECS CLUSTER (Spot Enabled)
+# ----------------------------
 resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
+
+  capacity_providers = [
+    "FARGATE",
+    "FARGATE_SPOT"
+  ]
 }
 
-# ✅ OPTION 3: Use existing CloudWatch Log Group
+# ----------------------------
+# Existing CloudWatch Log Group
+# ----------------------------
 data "aws_cloudwatch_log_group" "this" {
   name = "/ecs/${var.project_name}"
 }
 
+# ----------------------------
+# Security Group
+# ----------------------------
 data "aws_security_group" "ecs" {
   name   = "${var.project_name}-ecs-sg"
   vpc_id = data.aws_vpc.default.id
 }
 
+# ----------------------------
+# ECS TASK DEFINITION
+# ----------------------------
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
@@ -33,36 +49,14 @@ resource "aws_ecs_task_definition" "this" {
         }
       ]
 
-      # ✅ REQUIRED ENV VARIABLES FOR STRAPI v4 (COMPLETE)
       environment = [
-        {
-          name  = "NODE_ENV"
-          value = "production"
-        },
-        {
-          name  = "ADMIN_JWT_SECRET"
-          value = "adminjwtsecret123"
-        },
-        {
-          name  = "JWT_SECRET"
-          value = "jwtsecret123"
-        },
-        {
-          name  = "APP_KEYS"
-          value = "appkey1,appkey2,appkey3"
-        },
-        {
-          name  = "API_TOKEN_SALT"
-          value = "apitokensalt123456"
-        },
-        {
-          name  = "TRANSFER_TOKEN_SALT"
-          value = "transfertokensalt123456"
-        },
-        {
-          name  = "ENCRYPTION_KEY"
-          value = "encryptionkey1234567890"
-        }
+        { name = "NODE_ENV", value = "production" },
+        { name = "ADMIN_JWT_SECRET", value = "adminjwtsecret123" },
+        { name = "JWT_SECRET", value = "jwtsecret123" },
+        { name = "APP_KEYS", value = "appkey1,appkey2,appkey3" },
+        { name = "API_TOKEN_SALT", value = "apitokensalt123456" },
+        { name = "TRANSFER_TOKEN_SALT", value = "transfertokensalt123456" },
+        { name = "ENCRYPTION_KEY", value = "encryptionkey1234567890" }
       ]
 
       logConfiguration = {
@@ -77,14 +71,27 @@ resource "aws_ecs_task_definition" "this" {
   ])
 }
 
+# ----------------------------
+# ECS SERVICE (Fargate Spot)
+# ----------------------------
 resource "aws_ecs_service" "this" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 1
-  launch_type     = "FARGATE"
 
-  # 🔴 IMPORTANT: force ECS to use the new task revision
+  # ✅ Fargate Spot (primary)
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 2
+  }
+
+  # ✅ Normal Fargate (fallback)
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight            = 1
+  }
+
   force_new_deployment = true
 
   network_configuration {
