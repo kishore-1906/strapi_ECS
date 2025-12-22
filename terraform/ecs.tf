@@ -34,6 +34,7 @@ resource "aws_ecs_task_definition" "this" {
       portMappings = [
         {
           containerPort = 1337
+          protocol      = "tcp"
         }
       ]
 
@@ -69,7 +70,7 @@ resource "aws_ecs_service" "this" {
   launch_type = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.default.ids   # from vpc.tf
+    subnets          = data.aws_subnets.default.ids
     security_groups  = [data.aws_security_group.ecs.id]
     assign_public_ip = true
   }
