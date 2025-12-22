@@ -1,45 +1,13 @@
-# ----------------------------
+########################################
 # ECS CLUSTER
-# ----------------------------
+########################################
 resource "aws_ecs_cluster" "this" {
   name = "${var.project_name}-cluster"
 }
 
-# ----------------------------
-# ECS CLUSTER CAPACITY PROVIDERS
-# ----------------------------
-resource "aws_ecs_cluster_capacity_providers" "this" {
-  cluster_name = aws_ecs_cluster.this.name
-
-  capacity_providers = [
-    "FARGATE",
-    "FARGATE_SPOT"
-  ]
-
-  default_capacity_provider_strategy {
-    capacity_provider = "FARGATE_SPOT"
-    weight            = 1
-  }
-}
-
-# ----------------------------
-# Existing CloudWatch Log Group
-# ----------------------------
-data "aws_cloudwatch_log_group" "this" {
-  name = "/ecs/${var.project_name}"
-}
-
-# ----------------------------
-# Security Group
-# ----------------------------
-data "aws_security_group" "ecs" {
-  name   = "${var.project_name}-ecs-sg"
-  vpc_id = data.aws_vpc.default.id
-}
-
-# ----------------------------
-# ECS TASK DEFINITION
-# ----------------------------
+########################################
+# ECS TASK DEFINITION (PLACEHOLDER)
+########################################
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
   requires_compatibilities = ["FARGATE"]
@@ -63,48 +31,34 @@ resource "aws_ecs_task_definition" "this" {
 
       environment = [
         { name = "NODE_ENV", value = "production" },
-        { name = "ADMIN_JWT_SECRET", value = "adminjwtsecret123" },
-        { name = "JWT_SECRET", value = "jwtsecret123" },
-        { name = "APP_KEYS", value = "appkey1,appkey2,appkey3" },
-        { name = "API_TOKEN_SALT", value = "apitokensalt123456" },
-        { name = "TRANSFER_TOKEN_SALT", value = "transfertokensalt123456" },
-        { name = "ENCRYPTION_KEY", value = "encryptionkey1234567890" }
+        { name = "JWT_SECRET", value = "jwtsecret123" }
       ]
 
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = data.aws_cloudwatch_log_group.this.name
+          awslogs-group         = "/ecs/${var.project_name}"
           awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "ecs/strapi"
+          awslogs-stream-prefix = "ecs"
         }
       }
     }
   ])
 }
 
-# ----------------------------
-# ECS SERVICE (FARGATE SPOT)
-# ----------------------------
+########################################
+# ECS SERVICE (CODEDEPLOY CONTROLLED)
+########################################
 resource "aws_ecs_service" "this" {
-  name            = "${var.project_name}-service"
-  cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.this.arn
-  desired_count   = 1
+  name          = "${var.project_name}-service"
+  cluster       = aws_ecs_cluster.this.id
+  desired_count = 1
 
-  # Primary: Fargate Spot
-  capacity_provider_strategy {
-    capacity_provider = "FARGATE_SPOT"
-    weight            = 2
+  deployment_controller {
+    type = "CODE_DEPLOY"
   }
 
-  # Fallback: Normal Fargate
-  capacity_provider_strategy {
-    capacity_provider = "FARGATE"
-    weight            = 1
-  }
-
-  force_new_deployment = true
+  launch_type = "FARGATE"
 
   network_configuration {
     subnets          = data.aws_subnets.default.ids
@@ -113,14 +67,13 @@ resource "aws_ecs_service" "this" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.this.arn
+    target_group_arn = aws_lb_target_group.blue.arn
     container_name   = "strapi"
     container_port   = 1337
   }
 
   depends_on = [
-    aws_lb_listener.this,
-    aws_ecs_cluster_capacity_providers.this
+    aws_lb_listener.http
   ]
 }
 
