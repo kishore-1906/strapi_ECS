@@ -1,3 +1,6 @@
+########################################
+# ECS CPU HIGH ALARM
+########################################
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   alarm_name          = "ecs-strapi-high-cpu"
   comparison_operator = "GreaterThanThreshold"
@@ -8,7 +11,9 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   statistic           = "Average"
   threshold           = 70
   alarm_description   = "Triggers when ECS CPU usage exceeds 70%"
-  alarm_actions       = [aws_sns_topic.ecs_alerts.arn]
+
+  # SNS REMOVED (IAM restriction)
+  alarm_actions = []
 
   dimensions = {
     ClusterName = aws_ecs_cluster.this.name
@@ -16,6 +21,9 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   }
 }
 
+########################################
+# ECS MEMORY HIGH ALARM
+########################################
 resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   alarm_name          = "ecs-strapi-high-memory"
   comparison_operator = "GreaterThanThreshold"
@@ -26,7 +34,9 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   statistic           = "Average"
   threshold           = 75
   alarm_description   = "Triggers when ECS memory usage exceeds 75%"
-  alarm_actions       = [aws_sns_topic.ecs_alerts.arn]
+
+  # SNS REMOVED (IAM restriction)
+  alarm_actions = []
 
   dimensions = {
     ClusterName = aws_ecs_cluster.this.name
