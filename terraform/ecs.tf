@@ -82,7 +82,7 @@ resource "aws_ecs_service" "this" {
   }
 
   depends_on = [
-    data.aws_lb_listener.this
+    data.aws_lb_listener.http
   ]
 }
 

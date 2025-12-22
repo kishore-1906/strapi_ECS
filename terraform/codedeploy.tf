@@ -37,7 +37,7 @@ resource "aws_codedeploy_deployment_group" "ecs" {
       }
 
       prod_traffic_route {
-        listener_arns = [data.aws_lb_listeners.this.arns[0]]
+        listener_arns = [aws_lb_listener.http.arn]
       }
     }
   }
