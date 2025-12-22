@@ -14,6 +14,13 @@ data "aws_lb" "this" {
 }
 
 ########################################
+# FETCH ALL EXISTING LISTENERS (AUTO)
+########################################
+data "aws_lb_listeners" "this" {
+  load_balancer_arn = data.aws_lb.this.arn
+}
+
+########################################
 # TARGET GROUPS (BLUE & GREEN)
 ########################################
 resource "aws_lb_target_group" "blue" {
@@ -30,13 +37,5 @@ resource "aws_lb_target_group" "green" {
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
-}
-
-########################################
-# EXISTING ALB LISTENER (DATA)
-########################################
-data "aws_lb_listener" "http" {
-  load_balancer_arn = data.aws_lb.this.arn
-  port              = 80
 }
 
