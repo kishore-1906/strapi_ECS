@@ -1,21 +1,4 @@
 ########################################
-# DEFAULT VPC (DATA)
-########################################
-data "aws_vpc" "default" {
-  default = true
-}
-
-########################################
-# DEFAULT SUBNETS (DATA)
-########################################
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
-
-########################################
 # EXISTING ECS SECURITY GROUP (DATA)
 ########################################
 data "aws_security_group" "ecs" {
@@ -86,7 +69,7 @@ resource "aws_ecs_service" "this" {
   launch_type = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.default.ids
+    subnets          = data.aws_subnets.default.ids   # from vpc.tf
     security_groups  = [data.aws_security_group.ecs.id]
     assign_public_ip = true
   }
