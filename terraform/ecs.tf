@@ -1,4 +1,29 @@
 ########################################
+# DEFAULT VPC (DATA)
+########################################
+data "aws_vpc" "default" {
+  default = true
+}
+
+########################################
+# DEFAULT SUBNETS (DATA)
+########################################
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+########################################
+# EXISTING ECS SECURITY GROUP (DATA)
+########################################
+data "aws_security_group" "ecs" {
+  name   = "${var.project_name}-ecs-sg"
+  vpc_id = data.aws_vpc.default.id
+}
+
+########################################
 # ECS CLUSTER
 ########################################
 resource "aws_ecs_cluster" "this" {
