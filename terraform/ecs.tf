@@ -59,8 +59,12 @@ resource "aws_ecs_task_definition" "this" {
 # ECS SERVICE (CODEDEPLOY / BLUE-GREEN)
 ########################################
 resource "aws_ecs_service" "this" {
-  name          = "${var.project_name}-service"
-  cluster       = aws_ecs_cluster.this.id
+  name            = "${var.project_name}-service"
+  cluster         = aws_ecs_cluster.this.id
+
+  # ✅ REQUIRED — THIS WAS MISSING
+  task_definition = aws_ecs_task_definition.this.arn
+
   desired_count = 1
 
   deployment_controller {
