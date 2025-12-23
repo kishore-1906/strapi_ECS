@@ -1,4 +1,12 @@
 ########################################
+# CODEDEPLOY APPLICATION (REQUIRED)
+########################################
+resource "aws_codedeploy_app" "codedeploy" {
+  name             = "${var.project_name}-codedeploy"
+  compute_platform = "ECS"
+}
+
+########################################
 # CODEDEPLOY DEPLOYMENT GROUP (ECS BLUE/GREEN)
 ########################################
 resource "aws_codedeploy_deployment_group" "ecs" {
