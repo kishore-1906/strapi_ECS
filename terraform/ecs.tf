@@ -15,6 +15,7 @@ resource "aws_ecs_cluster" "this" {
 
 ########################################
 # ECS TASK DEFINITION
+# (Used ONLY for initial service creation)
 ########################################
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
@@ -62,7 +63,7 @@ resource "aws_ecs_service" "this" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.this.id
 
-  # ✅ REQUIRED — THIS WAS MISSING
+  # Required ONLY for first creation
   task_definition = aws_ecs_task_definition.this.arn
 
   desired_count = 1
@@ -83,6 +84,13 @@ resource "aws_ecs_service" "this" {
     target_group_arn = aws_lb_target_group.blue.arn
     container_name   = "strapi"
     container_port   = 1337
+  }
+
+  # 🔥 CRITICAL FOR CODEDEPLOY
+  lifecycle {
+    ignore_changes = [
+      task_definition
+    ]
   }
 
   depends_on = [

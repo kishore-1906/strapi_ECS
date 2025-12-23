@@ -1,16 +1,15 @@
 ########################################
-# CODEDEPLOY APPLICATION (REQUIRED)
+# EXISTING CODEDEPLOY APPLICATION
 ########################################
-resource "aws_codedeploy_app" "codedeploy" {
-  name             = "${var.project_name}-codedeploy"
-  compute_platform = "ECS"
+data "aws_codedeploy_app" "codedeploy" {
+  name = "${var.project_name}-codedeploy"
 }
 
 ########################################
 # CODEDEPLOY DEPLOYMENT GROUP (ECS BLUE/GREEN)
 ########################################
 resource "aws_codedeploy_deployment_group" "ecs" {
-  app_name              = aws_codedeploy_app.codedeploy.name
+  app_name              = data.aws_codedeploy_app.codedeploy.name
   deployment_group_name = "${var.project_name}-dg"
   service_role_arn      = aws_iam_role.codedeploy.arn
 
