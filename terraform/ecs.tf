@@ -1,5 +1,5 @@
 ########################################
-# EXISTING ECS SECURITY GROUP (DATA)
+# EXISTING ECS SECURITY GROUP
 ########################################
 data "aws_security_group" "ecs" {
   name   = "${var.project_name}-ecs-sg"
@@ -14,7 +14,7 @@ resource "aws_ecs_cluster" "this" {
 }
 
 ########################################
-# ECS TASK DEFINITION (PLACEHOLDER)
+# ECS TASK DEFINITION
 ########################################
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
@@ -56,7 +56,7 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 ########################################
-# ECS SERVICE (CODEDEPLOY CONTROLLED)
+# ECS SERVICE (CODEDEPLOY / BLUE-GREEN)
 ########################################
 resource "aws_ecs_service" "this" {
   name          = "${var.project_name}-service"
