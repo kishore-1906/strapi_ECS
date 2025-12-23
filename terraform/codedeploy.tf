@@ -1,19 +1,31 @@
 ########################################
-# CODEDEPLOY APPLICATION
-########################################
-resource "aws_codedeploy_app" "ecs" {
-  name             = "${var.project_name}-codedeploy"
-  compute_platform = "ECS"
-}
-
-########################################
-# CODEDEPLOY DEPLOYMENT GROUP
+# CODEDEPLOY DEPLOYMENT GROUP (ECS BLUE/GREEN)
 ########################################
 resource "aws_codedeploy_deployment_group" "ecs" {
   app_name              = aws_codedeploy_app.ecs.name
   deployment_group_name = "${var.project_name}-dg"
   service_role_arn      = aws_iam_role.codedeploy.arn
 
+  # ✅ REQUIRED for ECS Blue/Green
+  deployment_style {
+    deployment_type   = "BLUE_GREEN"
+    deployment_option = "WITH_TRAFFIC_CONTROL"
+  }
+
+  # ✅ REQUIRED for ECS Blue/Green
+  blue_green_deployment_config {
+
+    deployment_ready_option {
+      action_on_timeout = "CONTINUE_DEPLOYMENT"
+    }
+
+    terminate_blue_instances_on_deployment_success {
+      action                           = "TERMINATE"
+      termination_wait_time_in_minutes = 5
+    }
+  }
+
+  # Optional but OK to keep
   deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
 
   auto_rollback_configuration {
@@ -28,6 +40,7 @@ resource "aws_codedeploy_deployment_group" "ecs" {
 
   load_balancer_info {
     target_group_pair_info {
+
       target_group {
         name = aws_lb_target_group.blue.name
       }
