@@ -1,4 +1,4 @@
-name: Build & Deploy Strapi to ECS Fargate
+name: Terraform – Blue/Green Infra Setup
 
 on:
   push:
@@ -7,23 +7,15 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPO: strapi-repo
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  ECS_CLUSTER: strapi-cluster
-  ECS_SERVICE: strapi-service
-  CODEDEPLOY_APP: strapi-codedeploy
-  CODEDEPLOY_DG: strapi-dg
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -31,44 +23,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3️⃣ Login to Amazon ECR
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
 
-      # 4️⃣ Ensure ECR repository exists
-      - name: Ensure ECR repository exists
-        run: |
-          aws ecr describe-repositories --repository-names ${ECR_REPO} \
-          || aws ecr create-repository --repository-name ${ECR_REPO}
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -reconfigure
 
-      # 5️⃣ Build & Push Docker Image
-      - name: Build and Push Docker Image
-        run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
-
-          docker build -t $IMAGE_URI .
-          docker push $IMAGE_URI
-
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-
-      # 6️⃣ Register new ECS Task Definition
-      - name: Register ECS Task Definition
-        run: |
-          sed "s|<IMAGE_URI>|${IMAGE_URI}|g" appspec-taskdef.json > taskdef.json
-
-          TASK_DEF_ARN=$(aws ecs register-task-definition \
-            --cli-input-json file://taskdef.json \
-            --query 'taskDefinition.taskDefinitionArn' \
-            --output text)
-
-          echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
-
-      # 7️⃣ Trigger CodeDeploy Deployment
-      - name: Trigger CodeDeploy Deployment
-        run: |
-          aws deploy create-deployment \
-            --application-name ${CODEDEPLOY_APP} \
-            --deployment-group-name ${CODEDEPLOY_DG} \
-            --revision revisionType=AppSpecContent,appSpecContent="{content=$(cat appspec.yaml)}"
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
 
