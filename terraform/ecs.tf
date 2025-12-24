@@ -15,7 +15,6 @@ resource "aws_ecs_cluster" "this" {
 
 ########################################
 # ECS TASK DEFINITION
-# (Used ONLY for initial service creation)
 ########################################
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
@@ -30,7 +29,9 @@ resource "aws_ecs_task_definition" "this" {
   container_definitions = jsonencode([
     {
       name  = "strapi"
-      image = var.image_uri
+
+      # ✅ FIXED: Use Terraform-managed ECR repo
+      image = "${aws_ecr_repository.this.repository_url}:latest"
 
       portMappings = [
         {
@@ -60,8 +61,8 @@ resource "aws_ecs_task_definition" "this" {
 # ECS SERVICE (CODEDEPLOY / BLUE-GREEN)
 ########################################
 resource "aws_ecs_service" "this" {
-  name            = "${var.project_name}-service"
-  cluster         = aws_ecs_cluster.this.id
+  name    = "${var.project_name}-service"
+  cluster = aws_ecs_cluster.this.id
 
   # Required ONLY for first creation
   task_definition = aws_ecs_task_definition.this.arn
@@ -86,7 +87,7 @@ resource "aws_ecs_service" "this" {
     container_port   = 1337
   }
 
-  # 🔥 CRITICAL FOR CODEDEPLOY
+  # 🔥 REQUIRED FOR CODEDEPLOY
   lifecycle {
     ignore_changes = [
       task_definition
