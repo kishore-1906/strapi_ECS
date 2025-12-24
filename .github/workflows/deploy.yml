@@ -1,4 +1,4 @@
-name: Terraform – Blue/Green Infra Setup
+name: Terraform – ECS Blue/Green Deployment
 
 on:
   push:
@@ -7,15 +7,22 @@ on:
 
 env:
   AWS_REGION: us-east-1
+  PROJECT_NAME: strapi   # change if needed
 
 jobs:
-  terraform:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # ----------------------------
+      # Checkout
+      # ----------------------------
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ----------------------------
+      # AWS Auth
+      # ----------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -23,6 +30,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # ----------------------------
+      # Terraform Setup
+      # ----------------------------
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -35,4 +45,34 @@ jobs:
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve
+
+      # ----------------------------
+      # Fetch Latest Task Definition
+      # ----------------------------
+      - name: Get latest ECS Task Definition ARN
+        id: taskdef
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-task-definition \
+            --task-definition $PROJECT_NAME-task \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+          echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+      # ----------------------------
+      # Replace TaskDefinition in AppSpec
+      # ----------------------------
+      - name: Inject Task Definition into AppSpec
+        run: |
+          sed -i "s|<TASK_DEFINITION_ARN>|${TASK_DEF_ARN}|g" appspec.yaml
+          cat appspec.yaml
+
+      # ----------------------------
+      # Trigger CodeDeploy (Blue-Green)
+      # ----------------------------
+      - name: Trigger CodeDeploy Deployment
+        run: |
+          aws deploy create-deployment \
+            --application-name $PROJECT_NAME-codedeploy \
+            --deployment-group-name $PROJECT_NAME-dg \
+            --revision revisionType=AppSpecContent,appSpecContent="{file://appspec.yaml}"
 
