@@ -42,11 +42,11 @@ jobs:
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
       ####################################
-      # Build Docker Image (FIXED CONTEXT)
+      # Build Docker Image ✅ CORRECT
       ####################################
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPO:latest ./task_7
+          docker build -t $ECR_REPO:latest .
 
       ####################################
       # Tag Docker Image for ECR
