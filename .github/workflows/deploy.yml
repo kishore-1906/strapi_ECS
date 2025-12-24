@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  PROJECT_NAME: strapi   # change if needed
+  PROJECT_NAME: strapi
 
 jobs:
   deploy:
@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       # ----------------------------
-      # AWS Auth
+      # AWS Authentication
       # ----------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -47,10 +47,9 @@ jobs:
         run: terraform apply -auto-approve
 
       # ----------------------------
-      # Fetch Latest Task Definition
+      # Get latest ECS Task Definition ARN
       # ----------------------------
       - name: Get latest ECS Task Definition ARN
-        id: taskdef
         run: |
           TASK_DEF_ARN=$(aws ecs describe-task-definition \
             --task-definition $PROJECT_NAME-task \
@@ -59,11 +58,12 @@ jobs:
           echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
       # ----------------------------
-      # Replace TaskDefinition in AppSpec
+      # Inject Task Definition into AppSpec
       # ----------------------------
       - name: Inject Task Definition into AppSpec
         run: |
           sed -i "s|<TASK_DEFINITION_ARN>|${TASK_DEF_ARN}|g" appspec.yaml
+          echo "Updated AppSpec:"
           cat appspec.yaml
 
       # ----------------------------
@@ -74,5 +74,5 @@ jobs:
           aws deploy create-deployment \
             --application-name $PROJECT_NAME-codedeploy \
             --deployment-group-name $PROJECT_NAME-dg \
-            --revision revisionType=AppSpecContent,appSpecContent="{file://appspec.yaml}"
+            --revision="revisionType=AppSpecContent,appSpecContent={file://appspec.yaml}"
 
