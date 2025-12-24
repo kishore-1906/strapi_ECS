@@ -53,11 +53,14 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       ####################################
-      # STRAPI ENV VARS
+      # STRAPI ENV VARS (MATCH admin.js)
       ####################################
       environment = [
         { name = "NODE_ENV", value = "production" },
-        { name = "ADMIN_AUTH_SECRET", value = "adminauthsecret_123456789012345678901234567890" },
+
+        # 🔥 THIS MUST MATCH config/admin.js
+        { name = "ADMIN_JWT_SECRET", value = "adminjwtsecret_123456789012345678901234567890" },
+
         { name = "API_TOKEN_SALT", value = "apitokensalt_123456789012345678901234567890" },
         { name = "TRANSFER_TOKEN_SALT", value = "transfertokensalt_123456789012345678901234567890" },
         { name = "JWT_SECRET", value = "jwtsecret_123456789012345678901234567890" },
