@@ -9,22 +9,22 @@ env:
   AWS_REGION: us-east-1
   PROJECT_NAME: strapi
   ECR_REPO: strapi-repo
-  AWS_ACCOUNT_ID: 301782007642   # <-- your account id
+  AWS_ACCOUNT_ID: 301782007642
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # ----------------------------
+      ####################################
       # Checkout
-      # ----------------------------
+      ####################################
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ----------------------------
+      ####################################
       # AWS Authentication
-      # ----------------------------
+      ####################################
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -32,41 +32,41 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # ----------------------------
+      ####################################
       # Login to Amazon ECR
-      # ----------------------------
+      ####################################
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION \
           | docker login --username AWS --password-stdin \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-      # ----------------------------
-      # Build Docker Image
-      # ----------------------------
+      ####################################
+      # Build Docker Image (FIXED CONTEXT)
+      ####################################
       - name: Build Docker image
         run: |
-          docker build -t $ECR_REPO:latest .
+          docker build -t $ECR_REPO:latest ./task_7
 
-      # ----------------------------
+      ####################################
       # Tag Docker Image for ECR
-      # ----------------------------
+      ####################################
       - name: Tag Docker image
         run: |
           docker tag $ECR_REPO:latest \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
 
-      # ----------------------------
+      ####################################
       # Push Docker Image to ECR
-      # ----------------------------
+      ####################################
       - name: Push Docker image to ECR
         run: |
           docker push \
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
 
-      # ----------------------------
+      ####################################
       # Terraform Setup
-      # ----------------------------
+      ####################################
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -80,9 +80,9 @@ jobs:
         working-directory: terraform
         run: terraform apply -auto-approve
 
-      # ----------------------------
+      ####################################
       # Get latest ECS Task Definition ARN
-      # ----------------------------
+      ####################################
       - name: Get latest ECS Task Definition ARN
         run: |
           TASK_DEF_ARN=$(aws ecs describe-task-definition \
@@ -91,18 +91,18 @@ jobs:
             --output text)
           echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
-      # ----------------------------
+      ####################################
       # Inject Task Definition into AppSpec
-      # ----------------------------
+      ####################################
       - name: Inject Task Definition into AppSpec
         run: |
           sed -i "s|<TASK_DEFINITION_ARN>|${TASK_DEF_ARN}|g" appspec.yaml
           echo "Updated AppSpec:"
           cat appspec.yaml
 
-      # ----------------------------
+      ####################################
       # Trigger CodeDeploy (Blue-Green)
-      # ----------------------------
+      ####################################
       - name: Trigger CodeDeploy Deployment
         run: |
           cat > revision.json <<EOF
