@@ -1,4 +1,26 @@
 ########################################
+# VPC & SUBNETS (DEFAULT)
+########################################
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+########################################
+# EXISTING ECS SECURITY GROUP
+########################################
+data "aws_security_group" "ecs" {
+  name   = "${var.project_name}-ecs-sg"
+  vpc_id = data.aws_vpc.default.id
+}
+
+########################################
 # ECS CLUSTER
 ########################################
 resource "aws_ecs_cluster" "this" {
@@ -43,7 +65,6 @@ resource "aws_ecs_task_definition" "this" {
         { name = "TRANSFER_TOKEN_SALT", value = "transfertokensalt_123456789012345678901234567890" },
 
         { name = "JWT_SECRET", value = "jwtsecret_123456789012345678901234567890" },
-
         { name = "APP_KEYS", value = "key1,key2,key3,key4" }
       ]
 
