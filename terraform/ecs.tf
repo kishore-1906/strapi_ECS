@@ -30,7 +30,7 @@ resource "aws_ecs_task_definition" "this" {
     {
       name  = "strapi"
 
-      # ✅ Use Terraform-managed ECR repo
+      # Image pulled from ECR
       image = "${aws_ecr_repository.this.repository_url}:latest"
 
       portMappings = [
@@ -40,14 +40,21 @@ resource "aws_ecs_task_definition" "this" {
         }
       ]
 
+      # 🔑 REQUIRED ENVIRONMENT VARIABLES FOR STRAPI
       environment = [
         { name = "NODE_ENV", value = "production" },
+
+        # REQUIRED – fixes "Missing admin.auth.secret"
+        { name = "ADMIN_JWT_SECRET", value = "supersecretadminjwt_1234567890" },
+
+        # Optional (API auth)
         { name = "JWT_SECRET", value = "jwtsecret123" },
 
-        # 👇 TEMPORARY — forces new task definition revision
+        # Forces new revision (remove later if needed)
         { name = "FORCE_NEW_REVISION", value = "true" }
       ]
 
+      # CloudWatch Logs
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -67,7 +74,7 @@ resource "aws_ecs_service" "this" {
   name    = "${var.project_name}-service"
   cluster = aws_ecs_cluster.this.id
 
-  # Required ONLY for first creation
+  # Used only during initial creation
   task_definition = aws_ecs_task_definition.this.arn
 
   desired_count = 1
@@ -90,7 +97,7 @@ resource "aws_ecs_service" "this" {
     container_port   = 1337
   }
 
-  # 🔥 REQUIRED FOR CODEDEPLOY
+  # REQUIRED FOR CODEDEPLOY BLUE/GREEN
   lifecycle {
     ignore_changes = [
       task_definition
