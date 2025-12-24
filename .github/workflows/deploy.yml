@@ -42,7 +42,7 @@ jobs:
           $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
       ####################################
-      # Build Docker Image ✅ CORRECT
+      # Build Docker Image
       ####################################
       - name: Build Docker image
         run: |
@@ -81,15 +81,20 @@ jobs:
         run: terraform apply -auto-approve
 
       ####################################
-      # Get latest ECS Task Definition ARN
+      # ✅ FIX: Get LATEST ACTIVE ECS Task Definition ARN
       ####################################
       - name: Get latest ECS Task Definition ARN
         run: |
-          TASK_DEF_ARN=$(aws ecs describe-task-definition \
-            --task-definition $PROJECT_NAME-task \
-            --query "taskDefinition.taskDefinitionArn" \
+          LATEST_TASK_DEF_ARN=$(aws ecs list-task-definitions \
+            --family-prefix $PROJECT_NAME-task \
+            --status ACTIVE \
+            --sort DESC \
+            --max-items 1 \
+            --query "taskDefinitionArns[0]" \
             --output text)
-          echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
+
+          echo "TASK_DEF_ARN=$LATEST_TASK_DEF_ARN" >> $GITHUB_ENV
+          echo "Using task definition: $LATEST_TASK_DEF_ARN"
 
       ####################################
       # Inject Task Definition into AppSpec
