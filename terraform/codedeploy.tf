@@ -14,34 +14,57 @@ resource "aws_codedeploy_deployment_group" "ecs" {
   deployment_group_name = "${var.project_name}-dg"
   service_role_arn      = aws_iam_role.codedeploy.arn
 
+  ####################################
+  # DEPLOYMENT STYLE
+  ####################################
   deployment_style {
     deployment_type   = "BLUE_GREEN"
     deployment_option = "WITH_TRAFFIC_CONTROL"
   }
 
+  ####################################
+  # BLUE/GREEN CONFIG
+  ####################################
   blue_green_deployment_config {
+
     deployment_ready_option {
-      action_on_timeout = "CONTINUE_DEPLOYMENT"
+      action_on_timeout    = "CONTINUE_DEPLOYMENT"
+      wait_time_in_minutes = 5
     }
 
     terminate_blue_instances_on_deployment_success {
       action                           = "TERMINATE"
-      termination_wait_time_in_minutes = 5
+      termination_wait_time_in_minutes = 10
     }
   }
 
-  deployment_config_name = "CodeDeployDefault.ECSCanary10Percent5Minutes"
+  ####################################
+  # DEPLOYMENT STRATEGY (STABLE)
+  ####################################
+  deployment_config_name = "CodeDeployDefault.ECSAllAtOnce"
 
+  ####################################
+  # AUTO ROLLBACK
+  ####################################
   auto_rollback_configuration {
     enabled = true
-    events  = ["DEPLOYMENT_FAILURE"]
+    events  = [
+      "DEPLOYMENT_FAILURE",
+      "DEPLOYMENT_STOP_ON_ALARM"
+    ]
   }
 
+  ####################################
+  # ECS SERVICE
+  ####################################
   ecs_service {
     cluster_name = aws_ecs_cluster.this.name
     service_name = aws_ecs_service.this.name
   }
 
+  ####################################
+  # LOAD BALANCER (BLUE/GREEN)
+  ####################################
   load_balancer_info {
     target_group_pair_info {
 
