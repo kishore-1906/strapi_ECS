@@ -53,14 +53,11 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       ####################################
-      # STRAPI ENV VARS (MATCH admin.js)
+      # STRAPI ENV VARS
       ####################################
       environment = [
         { name = "NODE_ENV", value = "production" },
-
-        # 🔥 THIS MUST MATCH config/admin.js
         { name = "ADMIN_JWT_SECRET", value = "adminjwtsecret_123456789012345678901234567890" },
-
         { name = "API_TOKEN_SALT", value = "apitokensalt_123456789012345678901234567890" },
         { name = "TRANSFER_TOKEN_SALT", value = "transfertokensalt_123456789012345678901234567890" },
         { name = "JWT_SECRET", value = "jwtsecret_123456789012345678901234567890" },
@@ -83,7 +80,7 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 ########################################
-# ECS SERVICE (TEMPORARY – NO CODEDEPLOY)
+# ECS SERVICE (CODEDEPLOY ENABLED)
 ########################################
 resource "aws_ecs_service" "this" {
   name    = "${var.project_name}-service"
@@ -91,7 +88,15 @@ resource "aws_ecs_service" "this" {
 
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 1
-  launch_type     = "FARGATE"
+
+  ####################################
+  # 🔁 CODEDEPLOY CONTROLLER
+  ####################################
+  deployment_controller {
+    type = "CODE_DEPLOY"
+  }
+
+  launch_type = "FARGATE"
 
   network_configuration {
     subnets          = data.aws_subnets.default.ids
@@ -103,6 +108,13 @@ resource "aws_ecs_service" "this" {
     target_group_arn = aws_lb_target_group.blue.arn
     container_name   = "strapi"
     container_port   = 1337
+  }
+
+  ####################################
+  # 🔒 CODEDEPLOY OWNS TASK UPDATES
+  ####################################
+  lifecycle {
+    ignore_changes = [task_definition]
   }
 
   depends_on = [
