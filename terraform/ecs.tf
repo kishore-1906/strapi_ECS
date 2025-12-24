@@ -40,21 +40,37 @@ resource "aws_ecs_task_definition" "this" {
         }
       ]
 
-      # 🔑 REQUIRED ENVIRONMENT VARIABLES FOR STRAPI
+      ####################################
+      # REQUIRED STRAPI PRODUCTION SECRETS
+      ####################################
       environment = [
         { name = "NODE_ENV", value = "production" },
 
-        # REQUIRED – fixes "Missing admin.auth.secret"
-        { name = "ADMIN_JWT_SECRET", value = "supersecretadminjwt_1234567890" },
+        # Admin authentication (MANDATORY)
+        { name = "ADMIN_JWT_SECRET", value = "admin_jwt_secret_32chars_long_xxxx" },
 
-        # Optional (API auth)
-        { name = "JWT_SECRET", value = "jwtsecret123" },
+        # Admin API tokens (MANDATORY)
+        { name = "API_TOKEN_SALT", value = "api_token_salt_32chars_long_xxxx" },
 
-        # Forces new revision (remove later if needed)
+        # Content transfer (MANDATORY)
+        { name = "TRANSFER_TOKEN_SALT", value = "transfer_token_salt_32chars_xxxx" },
+
+        # Encryption (MANDATORY)
+        { name = "ENCRYPTION_KEY", value = "encryption_key_32chars_xxxx" },
+
+        # App keys (MANDATORY in production)
+        { name = "APP_KEYS", value = "key1,key2,key3,key4" },
+
+        # Optional API JWT
+        { name = "JWT_SECRET", value = "jwt_secret_optional_xxxx" },
+
+        # Force new task definition revision
         { name = "FORCE_NEW_REVISION", value = "true" }
       ]
 
+      ####################################
       # CloudWatch Logs
+      ####################################
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -74,7 +90,7 @@ resource "aws_ecs_service" "this" {
   name    = "${var.project_name}-service"
   cluster = aws_ecs_cluster.this.id
 
-  # Used only during initial creation
+  # Used only for initial creation
   task_definition = aws_ecs_task_definition.this.arn
 
   desired_count = 1
