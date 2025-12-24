@@ -53,17 +53,13 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       ####################################
-      # 🔥 STRAPI ENV VARS (CORRECT & FINAL)
+      # STRAPI ENV VARS
       ####################################
       environment = [
         { name = "NODE_ENV", value = "production" },
-
-        # ✅ THIS FIXES admin.auth.secret ERROR
         { name = "ADMIN_AUTH_SECRET", value = "adminauthsecret_123456789012345678901234567890" },
-
         { name = "API_TOKEN_SALT", value = "apitokensalt_123456789012345678901234567890" },
         { name = "TRANSFER_TOKEN_SALT", value = "transfertokensalt_123456789012345678901234567890" },
-
         { name = "JWT_SECRET", value = "jwtsecret_123456789012345678901234567890" },
         { name = "APP_KEYS", value = "key1,key2,key3,key4" }
       ]
@@ -84,7 +80,7 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 ########################################
-# ECS SERVICE (CODEDEPLOY – BLUE/GREEN)
+# ECS SERVICE (TEMPORARY – NO CODEDEPLOY)
 ########################################
 resource "aws_ecs_service" "this" {
   name    = "${var.project_name}-service"
@@ -92,12 +88,7 @@ resource "aws_ecs_service" "this" {
 
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 1
-
-  deployment_controller {
-    type = "CODE_DEPLOY"
-  }
-
-  launch_type = "FARGATE"
+  launch_type     = "FARGATE"
 
   network_configuration {
     subnets          = data.aws_subnets.default.ids
@@ -109,10 +100,6 @@ resource "aws_ecs_service" "this" {
     target_group_arn = aws_lb_target_group.blue.arn
     container_name   = "strapi"
     container_port   = 1337
-  }
-
-  lifecycle {
-    ignore_changes = [task_definition]
   }
 
   depends_on = [
