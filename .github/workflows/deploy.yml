@@ -67,12 +67,21 @@ jobs:
           cat appspec.yaml
 
       # ----------------------------
-      # Trigger CodeDeploy (Blue-Green)
+      # Trigger CodeDeploy (Blue-Green) ✅ FINAL FIX
       # ----------------------------
       - name: Trigger CodeDeploy Deployment
         run: |
+          cat > revision.json <<EOF
+          {
+            "revisionType": "AppSpecContent",
+            "appSpecContent": {
+              "content": "$(sed 's/"/\\"/g' appspec.yaml | tr -d '\n')"
+            }
+          }
+          EOF
+
           aws deploy create-deployment \
             --application-name $PROJECT_NAME-codedeploy \
             --deployment-group-name $PROJECT_NAME-dg \
-            --revision="revisionType=AppSpecContent,appSpecContent={file://appspec.yaml}"
+            --revision file://revision.json
 
