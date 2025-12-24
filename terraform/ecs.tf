@@ -30,7 +30,7 @@ resource "aws_ecs_task_definition" "this" {
     {
       name  = "strapi"
 
-      # ✅ FIXED: Use Terraform-managed ECR repo
+      # ✅ Use Terraform-managed ECR repo
       image = "${aws_ecr_repository.this.repository_url}:latest"
 
       portMappings = [
@@ -42,7 +42,10 @@ resource "aws_ecs_task_definition" "this" {
 
       environment = [
         { name = "NODE_ENV", value = "production" },
-        { name = "JWT_SECRET", value = "jwtsecret123" }
+        { name = "JWT_SECRET", value = "jwtsecret123" },
+
+        # 👇 TEMPORARY — forces new task definition revision
+        { name = "FORCE_NEW_REVISION", value = "true" }
       ]
 
       logConfiguration = {
