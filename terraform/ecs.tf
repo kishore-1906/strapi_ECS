@@ -28,7 +28,7 @@ resource "aws_ecs_cluster" "this" {
 }
 
 ########################################
-# ECS TASK DEFINITION (STRAPI – FIXED)
+# ECS TASK DEFINITION (STRAPI – FINAL FIX)
 ########################################
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.project_name}-task"
@@ -53,13 +53,13 @@ resource "aws_ecs_task_definition" "this" {
       ]
 
       ####################################
-      # STRAPI REQUIRED ENV VARS (CRITICAL)
+      # 🔥 STRAPI ENV VARS (CORRECT & FINAL)
       ####################################
       environment = [
         { name = "NODE_ENV", value = "production" },
 
-        { name = "ADMIN_JWT_SECRET", value = "adminjwtsecret_123456789012345678901234567890" },
-        { name = "STRAPI_ADMIN_JWT_SECRET", value = "adminjwtsecret_123456789012345678901234567890" },
+        # ✅ THIS FIXES admin.auth.secret ERROR
+        { name = "ADMIN_AUTH_SECRET", value = "adminauthsecret_123456789012345678901234567890" },
 
         { name = "API_TOKEN_SALT", value = "apitokensalt_123456789012345678901234567890" },
         { name = "TRANSFER_TOKEN_SALT", value = "transfertokensalt_123456789012345678901234567890" },
